@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const app = express()
 const mongoose = require('mongoose');
 //const MONGO_URI = process.env.MONGO_URI;
 const jsxEngine = require('jsx-view-engine');
@@ -8,13 +9,13 @@ const methodOverride = require('method-override');
 const PORT = 3000
 mongoose.connect(process.env.MONGO_URI) //process environment
 
-const app = express()
+
 
 app.use (express.urlencoded({ extended: true })); //enable req.body in form data-used for server side rendered website (send html files)
 //app.use(express.json())  //enables req.body in json data-used for api (send raw json data)
 app.set('view engine', 'jsx')
 app.engine('jsx', jsxEngine())
-app.use(methodOverride(_method))
+app.use(methodOverride('_method'))
 
 mongoose.connection.once('open', () => {
     console.log(`MongoDB is rockin', hit me with your best data`)
@@ -27,7 +28,7 @@ mongoose.connection.on('error', () => {
 //INDUCES
 
 //INDEX
-// list all fruits
+
 app.get('/fruits', async (req, res) => {
     try{
        const foundFruits = await Fruit.find({})
@@ -47,23 +48,19 @@ app.get('/fruits/new', (req, res) => {  // needs / at beginning
 });
 
 //DELETE
-// backend only delete
-app.delete('/fruits/:id/delete', async (req, res) => {
+
+app.delete('/fruits/:id', async (req, res) => {
     try {
         await Fruit.findOneAndDelete({ _id: req.params.id })
         .then((fruit) => {
-            res.sendStatus(204)
+            res.redirect('/fruits')
         })
     } catch (error) {
         res.status(400).send({ msg: error.message })
     }
 });
 
-//UPDATE
-// backend only update
-
 //CREATE
-// backend only create
 
 app.post('/fruits', async (req, res) => {
     if(req.body.readyToEat === 'on') {  // messaging the data
@@ -77,12 +74,36 @@ app.post('/fruits', async (req, res) => {
     } catch (error) {
     res.status(400).send({msg: error.message})
     }
-})
-//EDIT
-// shows and edits
+});
+
+//EDIT--UPDATE
+
+app.get('/fruits/:id/edit', async (req, res) => {
+    try {
+        const foundFruit = await Fruit.findOne({_id: req.params.id});
+        res.render('fruits/Edit', {
+            fruit: foundFruit
+        });
+    } catch (error) {
+        res.status(400).send({ msg: error.message });
+    }
+});
+
+app.put('/fruits/:id', async (req, res) => {
+       try {
+        if(req.body.readyToEat === 'on') {  
+            req.body.readyToEat = true
+       } else {   
+            req.body.readyToEat = false}
+           const updatedFruit = await Fruit.findOneAndUpdate({ _id: req.params.id}, req.body, {new : true})
+           res.redirect(`/fruits/${updatedFruit._id}`)
+       } catch (error) {
+           res.status(400).send({ msg: error.message })
+       }    
+});
 
 //SHOW
-// shows 1 item
+
 app.get('/fruits/:id', async (req, res) => {
     try {
         const foundFruit = await Fruit.findOne({_id: req.params.id})
@@ -92,7 +113,9 @@ app.get('/fruits/:id', async (req, res) => {
     } catch (error) {
         res.status(400).send({ msg: error.message })
     }
-})
+});
+
+
 app.listen(PORT, () => {
     console.log(`The PORT at ${PORT} is lit`)
 });

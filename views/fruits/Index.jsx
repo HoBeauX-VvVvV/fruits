@@ -2,6 +2,7 @@ const React = require('react');
 
 function Index(props) {
     return (
+        
         <div>
             <h1>Fruits index page</h1>
             <a href="/fruits/new">Create a new fruit here</a>
